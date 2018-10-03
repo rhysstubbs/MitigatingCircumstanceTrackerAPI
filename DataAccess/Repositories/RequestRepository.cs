@@ -1,6 +1,6 @@
-﻿namespace DataAccess.Repositories
+﻿namespace MCT.DataAccess.Repositories
 {
-    internal class RequestRepository
+    public class RequestRepository
     {
     }
 }
