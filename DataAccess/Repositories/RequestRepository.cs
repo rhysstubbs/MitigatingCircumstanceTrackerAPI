@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace DataAccess.Repositories
+﻿namespace DataAccess.Repositories
 {
-    class RequestRepository
+    internal class RequestRepository
     {
     }
 }
