@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace DataAccess.DataTransferObjects
+﻿namespace DataAccess.DataTransferObjects
 {
-    class RequestDTO
+    internal class RequestDTO
     {
     }
 }
