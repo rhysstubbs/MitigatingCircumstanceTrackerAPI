@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DataAccess.DataTransferObjects;
+using DataAccess.Interfaces.Repositories;
+using Microsoft.AspNetCore.Mvc;
+using RESTAPI.Models.JSON;
 
 namespace RESTAPI.Controllers
 {
@@ -8,6 +11,13 @@ namespace RESTAPI.Controllers
     [Consumes("application/json")]
     public class RequestController : BaseController
     {
+        private readonly IRequestRepository requestRepository;
+
+        public RequestController(IRequestRepository requestRepository)
+        {
+            this.requestRepository = requestRepository;
+        }
+
         [HttpGet("ByUserId/{id}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
@@ -23,21 +33,53 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(404)]
         public IActionResult Get(int id)
         {
-            return Ok();
+            var result = this.requestRepository.Get(id);
+            if (result == null)
+            {
+                return NotFound(id);
+            }
+
+            return Ok(result);
         }
 
         [HttpPost]
         [ProducesResponseType(201)]
         [ProducesResponseType(400)]
-        public ActionResult Post()
+        public ActionResult Post([FromBody] Request request)
         {
-            return Ok();
+            if (request == null)
+            {
+                return BadRequest(request);
+            }
+
+            var requestDTO = new RequestDTO(request);
+            var result = this.requestRepository.Insert(requestDTO);
+            if (result == null)
+            {
+                return StatusCode(500);
+            }
+
+            return CreatedAtAction(nameof(Get), new { id = result.RequestId }, result);
         }
 
-        [HttpPut]
-        public ActionResult Put()
+        [HttpPut("{id}")]
+        public ActionResult Put(int id, [FromBody] Request request)
         {
-            return Ok();
+
+            if (request == null)
+            {
+                return BadRequest();
+            }
+
+            request.RequestId = id;
+            var requestDTO = new RequestDTO(request);
+            var result = this.requestRepository.Update(requestDTO);
+            if (result == null)
+            {
+                return StatusCode(500);
+            }
+
+            return Ok(result);
         }
 
         [HttpDelete("{id}")]
@@ -45,6 +87,12 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(400)]
         public ActionResult Delete(int id)
         {
+            var result = this.requestRepository.Delete(id);
+            if (!result)
+            {
+                StatusCode(500);
+            }
+
             return Ok();
         }
     }

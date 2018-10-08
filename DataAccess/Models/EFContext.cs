@@ -11,6 +11,11 @@ namespace MCT.DataAccess.Models
         {
         }
 
+        public EFContext(DbContextOptions<EFContext> options)
+         : base(options)
+        {
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
