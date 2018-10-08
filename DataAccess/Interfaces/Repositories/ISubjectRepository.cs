@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MCT.DataAccess.DataTransferObjects;
+using MCT.DataAccess.Models;
 
-namespace DataAccess.Interfaces.Repositories
+namespace MCT.DataAccess.Repositories
 {
-    class ISubjectRepository
+    public interface ISubjectRepository
     {
+        GenericRepository<Subject> SubjectRepo { get; }
+    
+        SubjectDTO Get(int requestId);
+        SubjectDTO Insert(SubjectDTO requestDTO);
     }
 }

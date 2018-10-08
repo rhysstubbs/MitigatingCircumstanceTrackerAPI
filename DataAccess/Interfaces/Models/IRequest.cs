@@ -7,7 +7,5 @@ namespace MCT.DataAccess.Interfaces.Models
     {
         int RequestId { get; set; }
         string Description { get; set; }
-        ICollection<RequestSubject> RequestSubjects { get; set; }
-        ICollection<RequestFile> RequestFiles { get; set; }
     }
 }

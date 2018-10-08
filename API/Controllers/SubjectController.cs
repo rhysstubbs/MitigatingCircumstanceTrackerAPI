@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using MCT.DataAccess.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MCT.RESTAPI.Controllers
@@ -12,18 +8,39 @@ namespace MCT.RESTAPI.Controllers
     [Produces("application/json")]
     public class SubjectController : ControllerBase
     {
+        private ISubjectRepository subjectRepository;
 
-        [HttpGet("{id}")]
-        public IActionResult Get(int id)
+        public SubjectController(ISubjectRepository subjectRepository)
         {
-            return Ok();
+            this.subjectRepository = subjectRepository;
         }
 
+        /// <summary>
+        /// Retrieves a specific subject by ID.
+        /// </summary>
+        /// <param name="id"></param>
+        [HttpGet("{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public IActionResult Get(int id)
+        {
+            var result = this.subjectRepository.Get(id);
+            if (result == null)
+            {
+                return NotFound(id);
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Retrieves a specific subject by user ID.
+        /// </summary>
+        /// <param name="id"></param>
         [HttpGet("ByUserId/id")]
         public IActionResult GetByUserId(int id)
         {
             return Ok();
         }
-
     }
 }
