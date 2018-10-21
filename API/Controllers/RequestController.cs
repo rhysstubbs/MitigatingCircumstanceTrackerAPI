@@ -13,7 +13,7 @@ namespace RESTAPI.Controllers
     [Route("/[controller]")]
     [Produces("application/json")]
     [Consumes("application/json")]
-    public class RequestController : BaseController
+    internal class RequestController : BaseController
     {
         private readonly DatastoreDb datastore;
         private readonly KeyFactory keyFactory;
