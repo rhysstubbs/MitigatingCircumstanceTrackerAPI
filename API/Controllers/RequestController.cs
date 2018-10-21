@@ -19,13 +19,11 @@ namespace RESTAPI.Controllers
         private readonly KeyFactory keyFactory;
         private readonly IConfiguration configuration;
 
-        private readonly string kind = "Request";
-
         public RequestController(IConfiguration configuration)
         {
             this.configuration = configuration;
             this.datastore = DatastoreDb.Create(configuration["GAE:projectId"]);
-            this.keyFactory = this.datastore.CreateKeyFactory(this.kind);
+            this.keyFactory = this.datastore.CreateKeyFactory(Kind.Request.ToString());
         }
 
         [HttpGet]
@@ -33,7 +31,7 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(204)]
         public IActionResult Get()
         {
-            Query query = new Query(this.kind);
+            Query query = new Query(Kind.Request.ToString());
 
             DatastoreQueryResults results = this.datastore.RunQuery(query);
 

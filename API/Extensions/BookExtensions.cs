@@ -31,7 +31,7 @@ namespace MCT.RESTAPI.Extensions
         {
             return new Request()
             {
-                Id = entity.Key.Path.First().Id,
+                Id = entity.Key,
                 Owner = (long)entity["owner"],
                 Description = (string)entity["description"],
                 DateSubmitted = DateTime.ParseExact(entity["dateSubmitted"].StringValue, "yyyyMMddHHmmssfff", CultureInfo.InvariantCulture),

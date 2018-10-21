@@ -10,10 +10,13 @@ namespace RESTAPI.Models.JSON
     public class Request
     {
         [Key]
-        public long Id { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public Key Id { get; set; }
 
         public long Owner { get; set; }
+
         public string Description { get; set; }
+
         public DateTime DateSubmitted { get; set; }
 
         [JsonConverter(typeof(StringEnumConverter))]
