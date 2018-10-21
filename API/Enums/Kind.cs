@@ -2,7 +2,7 @@
 
 namespace MCT.RESTAPI.Enums
 {
-    public enum Kind
+    internal enum Kind
     {
         [Description("Request")]
         Request,

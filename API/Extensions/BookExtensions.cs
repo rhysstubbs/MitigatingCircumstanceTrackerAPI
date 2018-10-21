@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace MCT.RESTAPI.Extensions
 {
-    public static class BooExtensionMethods
+    internal static class BooExtensionMethods
     {
         /// <summary>
         /// Create a datastore entity with the same values as book.

@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RESTAPI.Models.JSON
 {
-    public class Request
+    internal class Request
     {
         [Key]
         [JsonConverter(typeof(StringEnumConverter))]

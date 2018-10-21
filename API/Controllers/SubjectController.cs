@@ -5,7 +5,7 @@ namespace MCT.RESTAPI.Controllers
     [ApiController]
     [Route("[controller]")]
     [Produces("application/json")]
-    public class SubjectController : ControllerBase
+    internal class SubjectController : ControllerBase
     {
         public SubjectController()
         {
