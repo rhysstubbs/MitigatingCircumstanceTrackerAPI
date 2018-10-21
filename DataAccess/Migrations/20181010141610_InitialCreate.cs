@@ -8,17 +8,17 @@ namespace MCT.DataAccess.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "File",
+                name: "Files",
                 columns: table => new
                 {
                     FileId = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
-                    Filename = table.Column<string>(nullable: true),
-                    Path = table.Column<string>(nullable: true)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Filename = table.Column<string>(nullable: false),
+                    Path = table.Column<string>(nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_File", x => x.FileId);
+                    table.PrimaryKey("PK_Files", x => x.FileId);
                 });
 
             migrationBuilder.CreateTable(
@@ -26,7 +26,7 @@ namespace MCT.DataAccess.Migrations
                 columns: table => new
                 {
                     RequestId = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Description = table.Column<string>(nullable: false)
                 },
                 constraints: table =>
@@ -39,7 +39,7 @@ namespace MCT.DataAccess.Migrations
                 columns: table => new
                 {
                     SubjectId = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Name = table.Column<string>(nullable: false)
                 },
                 constraints: table =>
@@ -48,7 +48,7 @@ namespace MCT.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "RequestFile",
+                name: "RequestFiles",
                 columns: table => new
                 {
                     RequestId = table.Column<int>(nullable: false),
@@ -56,15 +56,15 @@ namespace MCT.DataAccess.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RequestFile", x => new { x.RequestId, x.FileId });
+                    table.PrimaryKey("PK_RequestFiles", x => new { x.RequestId, x.FileId });
                     table.ForeignKey(
-                        name: "FK_RequestFile_File_FileId",
+                        name: "FK_RequestFiles_Files_FileId",
                         column: x => x.FileId,
-                        principalTable: "File",
+                        principalTable: "Files",
                         principalColumn: "FileId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_RequestFile_Requests_RequestId",
+                        name: "FK_RequestFiles_Requests_RequestId",
                         column: x => x.RequestId,
                         principalTable: "Requests",
                         principalColumn: "RequestId",
@@ -72,7 +72,7 @@ namespace MCT.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "RequestSubject",
+                name: "RequestSubjects",
                 columns: table => new
                 {
                     RequestId = table.Column<int>(nullable: false),
@@ -80,15 +80,15 @@ namespace MCT.DataAccess.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RequestSubject", x => new { x.RequestId, x.SubjectId });
+                    table.PrimaryKey("PK_RequestSubjects", x => new { x.RequestId, x.SubjectId });
                     table.ForeignKey(
-                        name: "FK_RequestSubject_Requests_RequestId",
+                        name: "FK_RequestSubjects_Requests_RequestId",
                         column: x => x.RequestId,
                         principalTable: "Requests",
                         principalColumn: "RequestId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_RequestSubject_Subjects_SubjectId",
+                        name: "FK_RequestSubjects_Subjects_SubjectId",
                         column: x => x.SubjectId,
                         principalTable: "Subjects",
                         principalColumn: "SubjectId",
@@ -96,26 +96,26 @@ namespace MCT.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_RequestFile_FileId",
-                table: "RequestFile",
+                name: "IX_RequestFiles_FileId",
+                table: "RequestFiles",
                 column: "FileId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RequestSubject_SubjectId",
-                table: "RequestSubject",
+                name: "IX_RequestSubjects_SubjectId",
+                table: "RequestSubjects",
                 column: "SubjectId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "RequestFile");
+                name: "RequestFiles");
 
             migrationBuilder.DropTable(
-                name: "RequestSubject");
+                name: "RequestSubjects");
 
             migrationBuilder.DropTable(
-                name: "File");
+                name: "Files");
 
             migrationBuilder.DropTable(
                 name: "Requests");

@@ -1,5 +1,4 @@
-﻿using MCT.DataAccess.Repositories;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace MCT.RESTAPI.Controllers
 {
@@ -8,11 +7,8 @@ namespace MCT.RESTAPI.Controllers
     [Produces("application/json")]
     public class SubjectController : ControllerBase
     {
-        private ISubjectRepository subjectRepository;
-
-        public SubjectController(ISubjectRepository subjectRepository)
+        public SubjectController()
         {
-            this.subjectRepository = subjectRepository;
         }
 
         /// <summary>
@@ -24,13 +20,7 @@ namespace MCT.RESTAPI.Controllers
         [ProducesResponseType(404)]
         public IActionResult Get(int id)
         {
-            var result = this.subjectRepository.Get(id);
-            if (result == null)
-            {
-                return NotFound(id);
-            }
-
-            return Ok(result);
+            return Ok();
         }
 
         /// <summary>
