@@ -2,7 +2,6 @@
 using MCT.DataAccess.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace MCT.DataAccess.Migrations
@@ -15,29 +14,28 @@ namespace MCT.DataAccess.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "2.1.4-rtm-31024")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128)
-                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("MCT.DataAccess.Models.File", b =>
                 {
                     b.Property<int>("FileId")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .ValueGeneratedOnAdd();
 
-                    b.Property<string>("Filename");
+                    b.Property<string>("Filename")
+                        .IsRequired();
 
-                    b.Property<string>("Path");
+                    b.Property<string>("Path")
+                        .IsRequired();
 
                     b.HasKey("FileId");
 
-                    b.ToTable("File");
+                    b.ToTable("Files");
                 });
 
             modelBuilder.Entity("MCT.DataAccess.Models.Request", b =>
                 {
                     b.Property<int>("RequestId")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .ValueGeneratedOnAdd();
 
                     b.Property<string>("Description")
                         .IsRequired();
@@ -57,7 +55,7 @@ namespace MCT.DataAccess.Migrations
 
                     b.HasIndex("FileId");
 
-                    b.ToTable("RequestFile");
+                    b.ToTable("RequestFiles");
                 });
 
             modelBuilder.Entity("MCT.DataAccess.Models.RequestSubject", b =>
@@ -70,14 +68,13 @@ namespace MCT.DataAccess.Migrations
 
                     b.HasIndex("SubjectId");
 
-                    b.ToTable("RequestSubject");
+                    b.ToTable("RequestSubjects");
                 });
 
             modelBuilder.Entity("MCT.DataAccess.Models.Subject", b =>
                 {
                     b.Property<int>("SubjectId")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .ValueGeneratedOnAdd();
 
                     b.Property<string>("Name")
                         .IsRequired();
