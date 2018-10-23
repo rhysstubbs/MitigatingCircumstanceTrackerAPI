@@ -2,7 +2,7 @@
 
 namespace MCT.RESTAPI.Enums
 {
-    internal enum RequestStatus
+    public enum RequestStatus
     {
         [Description("Submitted")]
         Submitted,

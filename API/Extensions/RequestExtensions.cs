@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace MCT.RESTAPI.Extensions
 {
-    internal static class BooExtensionMethods
+    internal static class RequestExtensionMethods
     {
         /// <summary>
         /// Create a datastore entity with the same values as book.
@@ -27,16 +27,13 @@ namespace MCT.RESTAPI.Extensions
         /// </summary>
         /// <param name="entity">An entity retrieved from datastore.</param>
         /// <returns>A Request.</returns>
-        public static Request ToRequest(this Entity entity)
+        public static Request ToRequest(this Entity entity) => new Request
         {
-            return new Request()
-            {
-                Id = entity.Key,
-                Owner = (long)entity["owner"],
-                Description = (string)entity["description"],
-                DateSubmitted = DateTime.ParseExact(entity["dateSubmitted"].StringValue, "yyyyMMddHHmmssfff", CultureInfo.InvariantCulture),
-                Status = (RequestStatus)Enum.Parse(typeof(RequestStatus), entity["status"].StringValue, true)
-            };
-        }
+            //Id = entity.Key,
+            Owner = (string)entity["owner"],
+            Description = (string)entity["description"],
+            DateSubmitted = DateTime.ParseExact(entity["dateSubmitted"].StringValue, "yyyyMMddHHmmssfff", CultureInfo.InvariantCulture),
+            Status = (RequestStatus)Enum.Parse(typeof(RequestStatus), entity["status"].StringValue, true)
+        };
     }
 }

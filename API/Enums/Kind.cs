@@ -8,6 +8,9 @@ namespace MCT.RESTAPI.Enums
         Request,
 
         [Description("Submitted")]
-        Subject
+        Subject,
+
+        [Description("User")]
+        User
     }
 }
