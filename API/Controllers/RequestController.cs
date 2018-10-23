@@ -13,7 +13,7 @@ namespace RESTAPI.Controllers
     [Route("/[controller]")]
     [Produces("application/json")]
     [Consumes("application/json")]
-    internal class RequestController : BaseController
+    public class RequestController : BaseController
     {
         private readonly DatastoreDb datastore;
         private readonly KeyFactory keyFactory;
@@ -29,18 +29,23 @@ namespace RESTAPI.Controllers
         [HttpGet]
         [ProducesResponseType(200)]
         [ProducesResponseType(204)]
-        public IActionResult Get()
+        public IActionResult Get([FromQuery] string username)
         {
             Query query = new Query(Kind.Request.ToString());
+         
+            if (username != null)
+            {
+                query.Filter = Filter.Equal("owner", username);
+            }
 
             DatastoreQueryResults results = this.datastore.RunQuery(query);
 
-            if (results.Entities.Count == 0)
+            if (!results.Entities.Any())
             {
                 return NoContent();
             }
 
-            return Ok(results.Entities.Select(entity => entity.ToRequest()));
+            return Ok(results.Entities.Select(x => x.ToRequest()));
         }
 
         [HttpGet("{key}")]

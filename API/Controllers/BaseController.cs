@@ -3,7 +3,7 @@
 namespace RESTAPI.Controllers
 {
     [ApiController]
-    internal class BaseController : ControllerBase
+    public class BaseController : ControllerBase
     {
     }
 }

@@ -7,18 +7,22 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RESTAPI.Models.JSON
 {
-    internal class Request
+    [JsonObject(MemberSerialization.OptIn)]
+    public class Request
     {
         [Key]
-        [JsonConverter(typeof(StringEnumConverter))]
         public Key Id { get; set; }
 
-        public long Owner { get; set; }
+        [JsonProperty]
+        public string Owner { get; set; }
 
+        [JsonProperty]
         public string Description { get; set; }
 
+        [JsonProperty]
         public DateTime DateSubmitted { get; set; }
 
+        [JsonProperty]
         [JsonConverter(typeof(StringEnumConverter))]
         public RequestStatus Status { get; set; }
     }
