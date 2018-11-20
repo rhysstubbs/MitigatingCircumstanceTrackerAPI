@@ -20,7 +20,13 @@ namespace RESTAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-            services.AddCors();
+
+            //services.AddCors(options => options.AddPolicy("MCTPolicy", builder =>
+            //{
+            //    builder.AllowAnyOrigin()
+            //           .AllowAnyMethod()
+            //           .AllowAnyHeader();
+            //}));
 
             services.AddSwaggerGen(c =>
             {
@@ -51,7 +57,15 @@ namespace RESTAPI
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "V1");
                 c.RoutePrefix = string.Empty;
+                c.DefaultModelsExpandDepth(-1);
             });
+
+            app.UseCors(builder => builder
+                    .AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials()
+                    );
 
             app.UseMvc();
         }
