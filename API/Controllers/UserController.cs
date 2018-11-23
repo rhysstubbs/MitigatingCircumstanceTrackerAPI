@@ -56,7 +56,8 @@ namespace RESTAPI.Controllers
                 ["username"] = user.Username,
                 ["password"] = user.Password,
                 ["firstname"] = user.Firstname,
-                ["lastname"] = user.Lastname
+                ["lastname"] = user.Lastname,
+                ["isAdmin"] = user.IsAdmin
             };
 
             using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
@@ -68,7 +69,7 @@ namespace RESTAPI.Controllers
                 }
                 catch (Exception exception)
                 {
-                    return StatusCode(500);
+                    return StatusCode(500, exception);
                 }
             }
 

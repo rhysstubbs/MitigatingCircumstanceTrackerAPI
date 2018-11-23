@@ -4,6 +4,9 @@ namespace MCT.RESTAPI.Enums
 {
     public enum RequestStatus
     {
+        [Description("Orphaned")]
+        Orphaned,
+
         [Description("Submitted")]
         Submitted,
 
@@ -13,7 +16,10 @@ namespace MCT.RESTAPI.Enums
         [Description("Approved)")]
         Approved,
 
+        [Description("Denied")]
+        Denied,
+
         [Description("Archived")]
-        Archived
+        Archived,
     }
 }

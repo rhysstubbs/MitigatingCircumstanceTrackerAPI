@@ -2,6 +2,7 @@
 using MCT.RESTAPI.Enums;
 using RESTAPI.Models.JSON;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
@@ -9,31 +10,33 @@ namespace MCT.RESTAPI.Extensions
 {
     internal static class RequestExtensionMethods
     {
-        /// <summary>
-        /// Create a datastore entity with the same values as book.
-        /// </summary>
-        /// <param name="book">The book to store in datastore.</param>
-        /// <returns>A datastore entity.</returns>
-        /// [START toentity]
-        public static Entity ToEntity(this Request request) => new Entity()
+        public static Key ToKey(this long id) =>
+            new Key().WithElement(Kind.Request.ToString(), id);
+
+        public static ArrayValue ToKeys(this HashSet<string> subjects) =>
+            subjects.Select(k => new Key().WithElement(Kind.Subject.ToString(), k.ToLower())).ToArray();
+
+        public static long ToId(this Key key) => key.Path.First().Id;
+
+        public static Entity ToEntity(this Request request, Kind kind) => new Entity()
         {
-            //Key = request.Id.ToKey()
+            Key = new Key().WithElement(kind.ToString(), request.Id),
+            ["description"] = request.Description,
+            ["owner"] = request.Owner,
+            ["status"] = request.Status.ToString(),
+            ["dateSubmitted"] = request.DateSubmitted
         };
 
-        // [END toentity]
-
-        /// <summary>
-        /// Unpack a Request from a datastore entity.
-        /// </summary>
-        /// <param name="entity">An entity retrieved from datastore.</param>
-        /// <returns>A Request.</returns>
-        public static Request ToRequest(this Entity entity) => new Request
+        public static Request ToRequest(this Entity entity)
         {
-            //Id = entity.Key,
-            Owner = (string)entity["owner"],
-            Description = (string)entity["description"],
-            DateSubmitted = DateTime.ParseExact(entity["dateSubmitted"].StringValue, "yyyyMMddHHmmssfff", CultureInfo.InvariantCulture),
-            Status = (RequestStatus)Enum.Parse(typeof(RequestStatus), entity["status"].StringValue, true)
-        };
+            return new Request
+            {
+                Id = entity.Key.ToId() != 0 ? entity.Key.ToId() : 0,
+                Owner = entity["owner"].KeyValue ?? null,
+                Description = (string)entity?["description"] ?? null,
+                DateSubmitted = DateTime.ParseExact(entity["dateSubmitted"]?.StringValue ?? DateTime.Now.ToString("yyyyMMddHHmmssfff"), "yyyyMMddHHmmssfff", CultureInfo.InvariantCulture),
+                Status = (RequestStatus)Enum.Parse(typeof(RequestStatus), entity["status"]?.StringValue, true)
+            };
+        }
     }
 }

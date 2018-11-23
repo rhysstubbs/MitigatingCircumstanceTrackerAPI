@@ -1,8 +1,5 @@
 ﻿using Google.Cloud.Datastore.V1;
-using MCT.RESTAPI.Enums;
 using MCT.RESTAPI.Models;
-using System;
-using System.Globalization;
 
 namespace MCT.RESTAPI.Extensions
 {
@@ -14,7 +11,7 @@ namespace MCT.RESTAPI.Extensions
             {
                 Username = (string)entity["username"],
                 Password = (string)entity["password"],
-                ISAdmin = (bool)entity["isAdmin"]
+                IsAdmin = (bool)entity["isAdmin"]
             };
         }
     }
