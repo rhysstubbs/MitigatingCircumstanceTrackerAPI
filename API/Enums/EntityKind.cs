@@ -2,7 +2,7 @@
 
 namespace MCT.RESTAPI.Enums
 {
-    internal enum Kind
+    internal enum EntityKind
     {
         [Description("Request")]
         Request,
@@ -11,6 +11,9 @@ namespace MCT.RESTAPI.Enums
         Subject,
 
         [Description("User")]
-        User
+        User,
+
+        [Description("File")]
+        File
     }
 }

@@ -1,7 +1,12 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Google.Cloud.Datastore.V1;
+using MCT.RESTAPI.Models.GoogleCloud;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Swashbuckle.AspNetCore.Swagger;
 using System.IO;
 
@@ -51,10 +56,20 @@ namespace RESTAPI
                 });
             });
 
-            // Dependency Injection Registration
+            services.AddOptions();
+
             services.AddSingleton<IConfiguration>(Configuration);
 
-            services.AddMvc();
+            services.Configure<CloudStorageOptions>(Configuration.GetSection("GoogleCloudStorage"));
+
+            services.AddMvc()
+            .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+            .AddJsonOptions(options =>
+            {
+                options.SerializerSettings.ContractResolver =
+                    new CamelCasePropertyNamesContractResolver();
+                options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

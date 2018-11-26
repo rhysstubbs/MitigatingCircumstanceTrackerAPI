@@ -21,13 +21,13 @@ namespace RESTAPI.Controllers
         {
             this.configuration = configuration;
             this.datastore = DatastoreDb.Create(configuration["GAE:projectId"]);
-            this.keyFactory = this.datastore.CreateKeyFactory(Kind.User.ToString());
+            this.keyFactory = this.datastore.CreateKeyFactory(EntityKind.User.ToString());
         }
 
         [HttpGet("exists/{username}")]
         public IActionResult GetUserExists(string username)
         {
-            Query query = new Query(Kind.User.ToString())
+            Query query = new Query(EntityKind.User.ToString())
             {
                 Filter = Filter.And(Filter.Equal("username", username))
             };
