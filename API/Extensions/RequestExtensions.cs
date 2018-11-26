@@ -11,14 +11,14 @@ namespace MCT.RESTAPI.Extensions
     internal static class RequestExtensionMethods
     {
         public static Key ToKey(this long id) =>
-            new Key().WithElement(Kind.Request.ToString(), id);
+            new Key().WithElement(EntityKind.Request.ToString(), id);
 
         public static ArrayValue ToKeys(this HashSet<string> subjects) =>
-            subjects.Select(k => new Key().WithElement(Kind.Subject.ToString(), k.ToLower())).ToArray();
+            subjects.Select(k => new Key().WithElement(EntityKind.Subject.ToString(), k.ToLower())).ToArray();
 
         public static long ToId(this Key key) => key.Path.First().Id;
 
-        public static Entity ToEntity(this Request request, Kind kind) => new Entity()
+        public static Entity ToEntity(this Request request, EntityKind kind) => new Entity()
         {
             Key = new Key().WithElement(kind.ToString(), request.Id),
             ["description"] = request.Description,

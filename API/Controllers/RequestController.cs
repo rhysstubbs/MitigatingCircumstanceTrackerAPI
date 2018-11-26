@@ -1,27 +1,36 @@
 ﻿using Google.Cloud.Datastore.V1;
+using Google.Cloud.Storage.V1;
 using MCT.RESTAPI.Enums;
 using MCT.RESTAPI.Extensions;
+using MCT.RESTAPI.Models.GoogleCloud;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using RESTAPI.Models.JSON;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace RESTAPI.Controllers
 {
     [ApiController]
     [Route("/[controller]")]
     [Produces("application/json")]
-    [Consumes("application/json")]
     public class RequestController : BaseController
     {
         private readonly DatastoreDb datastore;
-        private readonly KeyFactory keyFactory;
+        private readonly CloudStorageOptions storageOptions;
+        private readonly StorageClient storage;
 
-        public RequestController(IConfiguration configuration)
+        public RequestController(IConfiguration configuration, IOptions<CloudStorageOptions> options)
         {
             this.datastore = DatastoreDb.Create(configuration["GAE:ProjectId"]);
-            this.keyFactory = datastore.CreateKeyFactory(Kind.Request.ToString());
+            this.storageOptions = options.Value;
+            this.storage = StorageClient.Create();
         }
 
         [HttpGet]
@@ -29,7 +38,7 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(204)]
         public IActionResult Get()
         {
-            Query query = new Query(Kind.Request.ToString());
+            Query query = new Query(EntityKind.Request.ToString());
             DatastoreQueryResults results = this.datastore.RunQuery(query);
 
             if (!results.Entities.Any())
@@ -45,7 +54,7 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(404)]
         public IActionResult Get(long id)
         {
-            Key key = new Key().WithElement(Kind.Request.ToString(), id);
+            Key key = new Key().WithElement(EntityKind.Request.ToString(), id);
             Entity request = this.datastore.Lookup(key);
 
             if (request == null)
@@ -61,8 +70,8 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(204)]
         public IActionResult GetRequestsForUser(string username)
         {
-            Query query = new Query(Kind.Request.ToString());
-            Key userKey = new Key().WithElement(Kind.User.ToString(), username);
+            Query query = new Query(EntityKind.Request.ToString());
+            Key userKey = new Key().WithElement(EntityKind.User.ToString(), username);
 
             if (userKey != null)
             {
@@ -79,10 +88,105 @@ namespace RESTAPI.Controllers
             return Ok(results.Entities.Select(x => x.ToRequest()));
         }
 
+        [HttpPost("{id}/files/upload")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> UploadFilesAsync(long id)
+        {
+            List<IFormFile> uploads = this.Request.Form.Files.ToList();
+            Dictionary<string, string> results = new Dictionary<string, string>();
+
+            if (uploads.Any())
+            {
+                foreach (var f in uploads)
+                {
+                    if (f.Length <= 0 || f.Length > 1000000)
+                    {
+                        return BadRequest($"{f.FileName} - must be <= 25Mb in size and not empty.");
+                    }
+                    else
+                    {
+                        byte[] fBytes = new byte[f.Length];
+
+                        using (var ms = new MemoryStream())
+                        {
+                            f.CopyTo(ms);
+                            fBytes = ms.ToArray();
+                        }
+
+                        var rawFile = Encoding.UTF8.GetString(fBytes).ToCharArray();
+                        int timestamp = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+
+                        try
+                        {
+                            var uploadObject = await this.storage.UploadObjectAsync(
+                                            storageOptions.BucketName, f.FileName, f.ContentType,
+                                            new MemoryStream(Encoding.UTF8.GetBytes(rawFile)));
+
+                            if (uploadObject.Id.Length > 0)
+                            {
+                                var keyFactory = this.datastore.CreateKeyFactory(EntityKind.File.ToString());
+
+                                Entity fileEntity = new Entity
+                                {
+                                    Key = keyFactory.CreateIncompleteKey(),
+                                    ["request"] = new Key().WithElement(EntityKind.Request.ToString(), id),
+                                    ["name"] = f.FileName
+                                };
+
+                                CommitResponse commitResponse;
+                                using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
+                                {
+                                    try
+                                    {
+                                        transaction.Insert(fileEntity);
+                                        commitResponse = transaction.Commit();
+                                    }
+                                    catch (Exception exception)
+                                    {
+                                        return StatusCode(500, exception.Message);
+                                    }
+                                }
+
+                                if (commitResponse.MutationResults.Any())
+                                {
+                                    results.Add(f.FileName, uploadObject.MediaLink.ToString());
+                                    var completeKey = commitResponse.MutationResults.First().Key;
+                                    fileEntity.Key = completeKey;
+                                }
+                                else
+                                {
+                                    results.Add(f.FileName, null);
+                                }
+                            }
+                        }
+                        catch (UploadValidationException exception)
+                        {
+                            return BadRequest(exception.HelpLink);
+                        }
+                        catch (Exception exception)
+                        {
+                            return BadRequest(exception.Message);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                return BadRequest("Files must be sent multipart/form-data");
+            }
+
+            return Ok(results);
+        }
+
         [HttpPost]
         [ProducesResponseType(201)]
         public IActionResult Post([FromBody] JSONRequest request)
         {
+            var keyFactory = this.datastore.CreateKeyFactory(EntityKind.Request.ToString());
+
             if (request == null)
             {
                 return BadRequest("A request object must be present");
@@ -97,8 +201,8 @@ namespace RESTAPI.Controllers
 
             Entity requestEntity = new Entity
             {
-                Key = this.keyFactory.CreateIncompleteKey(),
-                ["owner"] = new Key().WithElement(Kind.User.ToString(), request.Owner),
+                Key = keyFactory.CreateIncompleteKey(),
+                ["owner"] = new Key().WithElement(EntityKind.User.ToString(), request.Owner),
                 ["status"] = RequestStatus.Submitted.ToString(),
                 ["dateSubmitted"] = DateTime.Now.ToString("yyyyMMddHHmmssfff"),
                 ["description"] = request.Description,
@@ -145,7 +249,7 @@ namespace RESTAPI.Controllers
 
             Entity requestEntity = new Entity()
             {
-                Key = new Key().WithElement(Kind.Request.ToString(), request.Id),
+                Key = new Key().WithElement(EntityKind.Request.ToString(), request.Id),
                 ["description"] = request.Description ?? null,
                 ["status"] = request.Status.ToString() ?? null
             };
@@ -167,7 +271,7 @@ namespace RESTAPI.Controllers
             return Ok(requestEntity.ToRequest());
         }
 
-        [HttpPatch("{id}/MarkAs/{status}")]
+        [HttpPatch("{id}/markAs/{status}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
@@ -178,7 +282,7 @@ namespace RESTAPI.Controllers
                 return BadRequest("Datastore Ids can not have an id of 0 (zero).");
             }
 
-            Key key = new Key().WithElement(Kind.Request.ToString(), id);
+            Key key = new Key().WithElement(EntityKind.Request.ToString(), id);
             Entity currentRequest = this.datastore.Lookup(key);
 
             if (currentRequest == null)
@@ -212,7 +316,7 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(500)]
         public IActionResult Delete(long id)
         {
-            Key key = new Key().WithElement(Kind.Request.ToString(), id);
+            Key key = new Key().WithElement(EntityKind.Request.ToString(), id);
 
             try
             {

@@ -9,8 +9,10 @@ namespace RESTAPI.Models.JSON
     {
         public long Id { get; set; }
 
+        [JsonRequired]
         public string Owner { get; set; }
 
+        [JsonRequired]
         public string Description { get; set; }
 
         public DateTime DateSubmitted { get; set; }
