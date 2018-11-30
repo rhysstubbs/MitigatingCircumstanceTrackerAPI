@@ -1,5 +1,4 @@
-﻿using Google.Cloud.Datastore.V1;
-using MCT.RESTAPI.Models.GoogleCloud;
+﻿using MCT.RESTAPI.Models.GoogleCloud;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -24,8 +23,8 @@ namespace RESTAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddCors(options => 
-            options.AddPolicy("MyPolicy", 
+            services.AddCors(options =>
+            options.AddPolicy("MyPolicy",
             builder =>
             {
                 builder.AllowAnyOrigin()
