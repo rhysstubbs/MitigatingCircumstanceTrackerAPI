@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using NotificationProvider.Interfaces;
+using NotificationProvider.Models.Notifications;
+using NotificationProvider.Services;
 using RESTAPI.Models.JSON;
 using System;
 using System.Collections.Generic;
@@ -25,12 +28,20 @@ namespace RESTAPI.Controllers
         private readonly DatastoreDb datastore;
         private readonly CloudStorageOptions storageOptions;
         private readonly StorageClient storage;
+        private readonly INotificationService notificationService;
+        private readonly Slack slackClient;
 
-        public RequestController(IConfiguration configuration, IOptions<CloudStorageOptions> options)
+        public RequestController(
+            IConfiguration configuration, 
+            IOptions<CloudStorageOptions> options,
+            INotificationService notificationService,
+            Slack slackClient)
         {
             this.datastore = DatastoreDb.Create(configuration["GAE:ProjectId"]);
             this.storageOptions = options.Value;
             this.storage = StorageClient.Create();
+            this.notificationService = notificationService;
+            this.slackClient = slackClient;
         }
 
         [HttpGet]
@@ -196,20 +207,12 @@ namespace RESTAPI.Controllers
                 return BadRequest("A user key is required as part of the request object");
             }
 
-            //var keys = request.Subjects.Select(key => new Key().WithElement(Kind.Subject.ToString(), key.ToLower()));
-            //Key[] keyArray = keys.ToArray();
+            request.DateSubmitted = DateTime.Now;
 
-            Entity requestEntity = new Entity
-            {
-                Key = keyFactory.CreateIncompleteKey(),
-                ["owner"] = new Key().WithElement(EntityKind.User.ToString(), request.Owner),
-                ["status"] = RequestStatus.Submitted.ToString(),
-                ["dateSubmitted"] = DateTime.Now.ToString("yyyyMMddHHmmssfff"),
-                ["description"] = request.Description,
-                //["subjects"] = new ArrayValue()
-            };
-
+            Entity requestEntity = request.ToEntity();
+            requestEntity.Key = keyFactory.CreateIncompleteKey();
             CommitResponse commitResponse;
+
             using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
             {
                 try
@@ -227,6 +230,17 @@ namespace RESTAPI.Controllers
             {
                 var completeKey = commitResponse.MutationResults.First().Key;
                 requestEntity.Key = completeKey;
+            }
+
+            try
+            {
+                this.slackClient.PostToChannel("advanced-development", $"A new request has been submited by {request.Owner}.");
+                //this.slackClient.PostToUser("i7433085@bournemouth.ac.uk", $"Your submission has been successful and is currently : {request.Status.ToString()}");
+                this.notificationService.PushAsync(new EmailNotification("i7433085@bournemouth.ac.uk", "this is a test"));
+            }
+            catch(Exception e)
+            {
+
             }
 
             return Ok(requestEntity.ToRequest());

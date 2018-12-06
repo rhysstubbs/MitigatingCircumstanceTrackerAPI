@@ -1,35 +1,51 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Google.Cloud.Datastore.V1;
+using MCT.RESTAPI.Enums;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using RESTAPI.Controllers;
+using System;
 
 namespace MCT.RESTAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
     [Produces("application/json")]
-    internal class SubjectController : ControllerBase
+    public class SubjectController : BaseController
     {
-        public SubjectController()
+        private readonly DatastoreDb datastore;
+
+        public SubjectController(IConfiguration configuration)
         {
+            this.datastore = DatastoreDb.Create(configuration["GAE:ProjectId"]);
         }
 
-        /// <summary>
-        /// Retrieves a specific subject by ID.
-        /// </summary>
-        /// <param name="id"></param>
-        [HttpGet("{id}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(404)]
-        public IActionResult Get(int id)
+        [HttpPost]
+        [ProducesResponseType(201)]
+        public IActionResult Post([FromBody] string subject)
         {
-            return Ok();
-        }
+            var keyFactory = this.datastore.CreateKeyFactory(EntityKind.Subject.ToString());
 
-        /// <summary>
-        /// Retrieves a specific subject by user ID.
-        /// </summary>
-        /// <param name="id"></param>
-        [HttpGet("ByUserId/id")]
-        public IActionResult GetByUserId(int id)
-        {
+            Entity entity = new Entity()
+            {
+                Key = keyFactory.CreateIncompleteKey(),
+                ["title"] = subject
+            };
+
+            CommitResponse commitResponse;
+
+            using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
+            {
+                try
+                {
+                    transaction.Insert(entity);
+                    commitResponse = transaction.Commit();
+                }
+                catch (Exception exception)
+                {
+                    return StatusCode(500, exception);
+                }
+            }
+
             return Ok();
         }
     }

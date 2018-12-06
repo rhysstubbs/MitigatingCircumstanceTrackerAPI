@@ -6,6 +6,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using NotificationProvider;
+using NotificationProvider.Interfaces;
+using NotificationProvider.Services;
 using Swashbuckle.AspNetCore.Swagger;
 using System.IO;
 
@@ -58,8 +61,9 @@ namespace RESTAPI
             services.AddOptions();
 
             services.AddSingleton<IConfiguration>(Configuration);
-
+            services.AddScoped<INotificationService, NotificationService>();
             services.Configure<CloudStorageOptions>(Configuration.GetSection("GoogleCloudStorage"));
+            services.AddScoped<Slack>();
 
             services.AddMvc()
             .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
