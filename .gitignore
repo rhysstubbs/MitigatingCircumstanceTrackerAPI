@@ -329,6 +329,7 @@ ASALocalRun/
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
 
-./MCTAPI-1bc8f5d2d36a.json
 /.localhistory/C/Users/Andy/source/repos/MCT/API
 /.localhistory/C/Users/Andy/source/repos/MCT
+appsettings.json
+MCTAPI-1bc8f5d2d36a.json
