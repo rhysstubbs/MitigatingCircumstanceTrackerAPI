@@ -14,6 +14,9 @@ namespace MCT.RESTAPI.Enums
         User,
 
         [Description("File")]
-        File
+        File,
+
+        [Description("Confirmation")]
+        Confirmation
     }
 }

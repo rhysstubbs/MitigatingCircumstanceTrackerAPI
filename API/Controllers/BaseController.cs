@@ -3,10 +3,10 @@
 namespace RESTAPI.Controllers
 {
     [ApiController]
-    [Route("/test")]
+    [Route("/")]
     public class BaseController : ControllerBase
     {
-        [HttpGet]
+        [HttpGet("isLive")]
         [ProducesResponseType(200)]
         public IActionResult Index()
         {

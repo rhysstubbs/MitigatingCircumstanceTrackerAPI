@@ -4,8 +4,11 @@ using MCT.RESTAPI.Extensions;
 using MCT.RESTAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using NotificationProvider.Interfaces;
+using NotificationProvider.Models.Notifications;
 using System;
 using System.Linq;
+using System.Net.Mail;
 
 namespace RESTAPI.Controllers
 {
@@ -14,22 +17,26 @@ namespace RESTAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly DatastoreDb datastore;
-        private readonly KeyFactory keyFactory;
         private readonly IConfiguration configuration;
+        private readonly INotificationService notificationService;
 
-        public UserController(IConfiguration configuration)
+        public UserController(IConfiguration configuration, INotificationService notificationService)
         {
             this.configuration = configuration;
             this.datastore = DatastoreDb.Create(configuration["GAE:projectId"]);
-            this.keyFactory = this.datastore.CreateKeyFactory(EntityKind.User.ToString());
+            this.notificationService = notificationService;
         }
 
-        [HttpGet("exists/{username}")]
+        [HttpGet("{username}/exists")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         public IActionResult GetUserExists(string username)
         {
             Query query = new Query(EntityKind.User.ToString())
             {
-                Filter = Filter.And(Filter.Equal("username", username))
+                Filter = Filter.And(Filter.Equal("username", username)),
+                Projection = { "__key__" }
             };
 
             DatastoreQueryResults result = this.datastore.RunQuery(query);
@@ -42,13 +49,122 @@ namespace RESTAPI.Controllers
             return Ok(result.Entities.Select(u => u.ToMinimalUser()).FirstOrDefault());
         }
 
+        [HttpGet("confirm/{token}/validate")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public IActionResult ValidateConfirmedUser(string token)
+        {
+            Query query = new Query(EntityKind.Confirmation.ToString())
+            {
+                Filter = Filter.And(Filter.Equal("token", token)),
+            };
+
+            DatastoreQueryResults result = this.datastore.RunQuery(query);
+            Entity confEntity;
+
+            if (!result.Entities.Any())
+            {
+                return NotFound(token);
+            }
+
+            confEntity = result.Entities.First();
+            var createdAt = DateTime.ParseExact(confEntity["created_at"].StringValue, "yyyyMMddHHmmssfff", System.Globalization.CultureInfo.InstalledUICulture);
+
+            if (createdAt < DateTime.Now.AddHours(-24))
+            {
+                return BadRequest("Expired");
+            }
+
+            var keyFactory = this.datastore.CreateKeyFactory(EntityKind.User.ToString());
+
+            var username = confEntity["username"].StringValue;
+            var isAdmin = username.ToCharArray().First() != 'i';
+
+            // Create the user account
+            Entity newUser = new Entity()
+            {
+                Key = keyFactory.CreateIncompleteKey(),
+                ["username"] = username,
+                ["isAdmin"] = isAdmin
+            };
+
+            CommitResponse response;
+            using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
+            {
+                transaction.Insert(newUser);
+                transaction.Delete(confEntity);
+
+                response = transaction.Commit();
+            }
+
+            if (response.MutationResults.Count != 2)
+            {
+                return StatusCode(500);
+            }
+
+            return Ok();
+        }
+
+        [HttpPost("{username}/confirm")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public IActionResult ConfirmUser(string username)
+        {
+            var emailAddress = new MailAddress($"{username}@bournemouth.ac.uk");
+            string token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+            var kf = this.datastore.CreateKeyFactory(EntityKind.Confirmation.ToString());
+
+            Entity confirmationEntity = new Entity()
+            {
+                Key = kf.CreateIncompleteKey(),
+                ["token"] = token,
+                ["created_at"] = DateTime.Now.ToString("yyyyMMddHHmmssfff"),
+                ["user"] = username
+            };
+
+            CommitResponse commitResponse;
+            using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
+            {
+                try
+                {
+                    transaction.Insert(confirmationEntity);
+                    commitResponse = transaction.Commit();
+                }
+                catch (Exception exception)
+                {
+                    return StatusCode(500, exception);
+                }
+            }
+
+            var uriBuilder = new UriBuilder()
+            {
+                Scheme = "http",
+                Host = "localhost",
+                Port = 8080,
+                Path = $"login/confirm/{token}"
+            };
+            var url = uriBuilder.ToString();
+
+            var mail = new EmailNotification(emailAddress.ToString(), $"Click the link to confirm your account - {url}");
+
+            var result = this.notificationService.PushAsync(mail);
+            if (!result)
+            {
+                return StatusCode(500);
+            }
+
+            return Ok();
+        }
+
         [HttpPost]
         [ProducesResponseType(200)]
         [ProducesResponseType(500)]
         public ActionResult PostCreateUser([FromBody] User user)
         {
             string entityName = user.Username;
-            Key key = this.keyFactory.CreateKey(entityName);
+            var keyFactory = this.datastore.CreateKeyFactory(EntityKind.User.ToString());
+            Key key = keyFactory.CreateKey(entityName);
 
             Entity userEntity = new Entity
             {
