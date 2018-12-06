@@ -332,4 +332,5 @@ ASALocalRun/
 /.localhistory/C/Users/Andy/source/repos/MCT/API
 /.localhistory/C/Users/Andy/source/repos/MCT
 appsettings.json
+appsettings.Development.json
 MCTAPI-1bc8f5d2d36a.json
