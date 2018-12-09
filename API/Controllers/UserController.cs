@@ -152,8 +152,7 @@ namespace RESTAPI.Controllers
 
             var uriBuilder = new UriBuilder()
             {
-                Scheme = this.Request.IsHttps ? "https" : "http",
-                Host = this.Request.Host.ToString(),
+                Host = configuration["CORS:Origin"],
                 Path = $"login/confirm/{ Uri.EscapeDataString(token)}"
             };
 
