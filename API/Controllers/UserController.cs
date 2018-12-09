@@ -35,7 +35,7 @@ namespace RESTAPI.Controllers
         {
             Query query = new Query(EntityKind.User.ToString())
             {
-                Filter = Filter.And(Filter.Equal("username", username)),
+                Filter = Filter.Equal("username", username),
                 Projection = { "__key__" }
             };
 
@@ -46,29 +46,31 @@ namespace RESTAPI.Controllers
                 return NotFound(username);
             }
 
-            return Ok(result.Entities.Select(u => u.ToMinimalUser()).FirstOrDefault());
+            return Ok(result.Entities.First());
         }
 
-        [HttpGet("confirm/{token}/validate")]
+        [HttpGet("confirm")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public IActionResult ValidateConfirmedUser(string token)
+        public IActionResult ValidateConfirmedUser([FromQuery] string token)
         {
+            var decodedToken = Uri.UnescapeDataString(token);
+
             Query query = new Query(EntityKind.Confirmation.ToString())
             {
-                Filter = Filter.And(Filter.Equal("token", token)),
+                Filter = Filter.Equal("token", decodedToken)
             };
 
             DatastoreQueryResults result = this.datastore.RunQuery(query);
-            Entity confEntity;
+            
 
             if (!result.Entities.Any())
             {
                 return NotFound(token);
             }
 
-            confEntity = result.Entities.First();
+            Entity confEntity = result.Entities.First();
             var createdAt = DateTime.ParseExact(confEntity["created_at"].StringValue, "yyyyMMddHHmmssfff", System.Globalization.CultureInfo.InstalledUICulture);
 
             if (createdAt < DateTime.Now.AddHours(-24))
@@ -78,7 +80,7 @@ namespace RESTAPI.Controllers
 
             var keyFactory = this.datastore.CreateKeyFactory(EntityKind.User.ToString());
 
-            var username = confEntity["username"].StringValue;
+            var username = confEntity["user"].StringValue;
             var isAdmin = username.ToCharArray().First() != 'i';
 
             // Create the user account
@@ -112,6 +114,7 @@ namespace RESTAPI.Controllers
         public IActionResult ConfirmUser(string username)
         {
             var emailAddress = new MailAddress($"{username}@bournemouth.ac.uk");
+
             string token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
             var kf = this.datastore.CreateKeyFactory(EntityKind.Confirmation.ToString());
 
@@ -137,22 +140,20 @@ namespace RESTAPI.Controllers
                 }
             }
 
+            var encodedToken = Uri.EscapeDataString(token);
+
             var uriBuilder = new UriBuilder()
             {
                 Scheme = "http",
                 Host = "localhost",
                 Port = 8080,
-                Path = $"login/confirm/{token}"
+                Path = $"login/confirm/{encodedToken}"
             };
-            var url = uriBuilder.ToString();
 
+            var url = uriBuilder.ToString();
             var mail = new EmailNotification(emailAddress.ToString(), $"Click the link to confirm your account - {url}");
 
-            var result = this.notificationService.PushAsync(mail);
-            if (!result)
-            {
-                return StatusCode(500);
-            }
+            this.notificationService.PushAsync(mail);
 
             return Ok();
         }
@@ -191,5 +192,6 @@ namespace RESTAPI.Controllers
 
             return Ok();
         }
+
     }
 }

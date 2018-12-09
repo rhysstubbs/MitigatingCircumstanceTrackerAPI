@@ -57,7 +57,6 @@ namespace RESTAPI.Models.JSON
             ["dateStarted"] = this.DateStarted.ToString("yyyyMMddHHmmssfff"),
             ["dateEnded"] = this.DateEnded.ToString("yyyyMMddHHmmssfff"),
             ["onGoing"] = this.OnGoing,
-            ["affectedSubjects"] = this.Subjects.Select(x => new Key().WithElement(EntityKind.Subject.ToString(), x)).ToArray(),
             ["status"] = this.Status.ToString()
         };
     }

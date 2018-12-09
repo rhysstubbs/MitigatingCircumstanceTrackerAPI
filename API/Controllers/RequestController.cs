@@ -208,6 +208,7 @@ namespace RESTAPI.Controllers
             }
 
             request.DateSubmitted = DateTime.Now;
+            request.Status = RequestStatus.Submitted;
 
             Entity requestEntity = request.ToEntity();
             requestEntity.Key = keyFactory.CreateIncompleteKey();

@@ -1,4 +1,5 @@
-﻿using NotificationProvider.Interfaces;
+﻿using Microsoft.Extensions.Configuration;
+using NotificationProvider.Interfaces;
 using NotificationProvider.Models;
 using NotificationProvider.Services;
 using System.Net.Mail;
@@ -7,7 +8,16 @@ namespace NotificationProvider
 {
     public class NotificationService : INotificationService
     {
-        public bool PushAsync(Notification notification)
+        private readonly IConfiguration configuration;
+        private readonly Mailer mailer;
+
+        public NotificationService(IConfiguration configuration)
+        {
+            this.configuration = configuration;
+            this.mailer = new Mailer(configuration["SendGrid:Endpoint"], configuration["SendGrid:ApiKey"]);
+        }
+
+        public async void PushAsync(Notification notification)
         {
             SendGridMail mail = new SendGridMail()
             {
@@ -16,14 +26,7 @@ namespace NotificationProvider
                 Content = notification.Message
             };
 
-            var mailer = new Mailer();
-            var result = mailer.Send(mail);
-            if (!result.IsCompletedSuccessfully)
-            {
-                return false;
-            }
-
-            return true;
+            await mailer.Send(mail);
         }
 
         public bool SendSlackMessage(string user, string mesage)
