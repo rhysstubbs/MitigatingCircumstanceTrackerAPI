@@ -88,30 +88,6 @@ namespace RESTAPI.Controllers
             return Ok(request.ToRequest());
         }
 
-        [HttpGet("ForUser/{username}")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(204)]
-        [ProducesResponseType(400)]
-        public IActionResult GetRequestsForUser(string username)
-        {
-            Query query = new Query(EntityKind.Request.ToString());
-            Key userKey = new Key().WithElement(EntityKind.User.ToString(), username);
-
-            if (userKey != null)
-            {
-                query.Filter = Filter.Equal("owner", userKey);
-            }
-
-            DatastoreQueryResults results = this.datastore.RunQuery(query);
-
-            if (!results.Entities.Any())
-            {
-                return NoContent();
-            }
-
-            return Ok(results.Entities.Select(x => x.ToRequest()));
-        }
-
         [HttpPost("{id}/files/upload")]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(200)]

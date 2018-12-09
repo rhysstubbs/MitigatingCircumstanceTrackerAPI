@@ -1,5 +1,6 @@
 ﻿using Google.Cloud.Datastore.V1;
 using MCT.RESTAPI.Enums;
+using MCT.RESTAPI.Extensions;
 using MCT.RESTAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -14,7 +15,7 @@ namespace RESTAPI.Controllers
     [ApiController]
     [Route("[controller]")]
     [Produces("application/json")]
-    public class UserController : ControllerBase
+    public class UserController : BaseController
     {
         #region Properties
 
@@ -196,6 +197,30 @@ namespace RESTAPI.Controllers
             }
 
             return Ok();
+        }
+
+        [HttpGet("{username}/requests")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        public IActionResult GetRequestsForUser(string username)
+        {
+            Query query = new Query(EntityKind.Request.ToString());
+            Key userKey = new Key().WithElement(EntityKind.User.ToString(), username);
+
+            if (userKey != null)
+            {
+                query.Filter = Filter.Equal("owner", userKey);
+            }
+
+            DatastoreQueryResults results = this.datastore.RunQuery(query);
+
+            if (!results.Entities.Any())
+            {
+                return NoContent();
+            }
+
+            return Ok(results.Entities.Select(x => x.ToRequest()));
         }
 
         #endregion Methods
