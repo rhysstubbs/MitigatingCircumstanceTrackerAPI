@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 namespace RESTAPI.Controllers
 {
     [ApiController]
-    [Route("/[controller]")]
+    [Route("[controller]")]
     [Produces("application/json")]
     public class RequestController : BaseController
     {
