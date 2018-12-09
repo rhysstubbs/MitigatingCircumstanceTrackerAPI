@@ -38,6 +38,35 @@ namespace RESTAPI.Controllers
 
         #region Methods
 
+        [HttpGet("{username}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public IActionResult GetUser(string username)
+        {
+            Query query = new Query(EntityKind.User.ToString())
+            {
+                Filter = Filter.Equal("username", username),
+            };
+
+            DatastoreQueryResults result = this.datastore.RunQuery(query);
+
+            if (!result.Entities.Any())
+            {
+                return NotFound(username);
+            }
+
+            var props = result.Entities.First().Properties;
+            var user = new User()
+            {
+                Id = result.Entities.First().Key,
+                Username = props["username"].StringValue,
+                IsAdmin = props["isAdmin"].BooleanValue
+            };
+
+            return Ok(user);
+        }
+
         [HttpGet("{username}/exists")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
@@ -158,42 +187,6 @@ namespace RESTAPI.Controllers
 
             var mail = new EmailNotification(emailAddress.ToString(), "Account Confirmation", $"Click the link to confirm your account - {uriBuilder.ToString()}");
             this.notificationService.PushAsync(mail);
-
-            return Ok();
-        }
-
-        [HttpPost]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(500)]
-        public ActionResult PostCreateUser([FromBody] User user)
-        {
-            string entityName = user.Username;
-            var keyFactory = this.datastore.CreateKeyFactory(EntityKind.User.ToString());
-            Key key = keyFactory.CreateKey(entityName);
-
-            Entity userEntity = new Entity
-            {
-                Key = key,
-                ["username"] = user.Username,
-                ["password"] = user.Password,
-                ["firstname"] = user.Firstname,
-                ["lastname"] = user.Lastname,
-                ["isAdmin"] = user.IsAdmin
-            };
-
-            using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
-            {
-                try
-                {
-                    transaction.Insert(userEntity);
-                    transaction.Commit();
-                }
-                catch (Exception exception)
-                {
-                    return StatusCode(500, exception);
-                }
-            }
 
             return Ok();
         }
