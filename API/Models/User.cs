@@ -27,9 +27,6 @@ namespace MCT.RESTAPI.Models
         [JsonProperty]
         public bool IsAdmin { get; set; }
 
-        [JsonProperty]
-        public HashSet<Subject> Subjects { get; set; }
-
         public string Fullname()
         {
             return $"{this.Firstname} {this.Lastname}";

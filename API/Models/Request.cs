@@ -29,7 +29,5 @@ namespace RESTAPI.Models.JSON
         [JsonConverter(typeof(StringEnumConverter))]
         public RequestStatus? Status { get; set; }
 
-        [JsonProperty]
-        public string[] Subjects { get; set; }
     }
 }

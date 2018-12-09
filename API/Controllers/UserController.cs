@@ -11,8 +11,9 @@ using System.Net.Mail;
 
 namespace RESTAPI.Controllers
 {
-    [Route("[controller]")]
     [ApiController]
+    [Route("[controller]")]
+    [Produces("application/json")]
     public class UserController : ControllerBase
     {
         #region Properties
@@ -148,19 +149,14 @@ namespace RESTAPI.Controllers
                 }
             }
 
-            var encodedToken = Uri.EscapeDataString(token);
-
             var uriBuilder = new UriBuilder()
             {
-                Scheme = "http",
-                Host = "localhost",
-                Port = 8080,
-                Path = $"login/confirm/{encodedToken}"
+                Scheme = this.Request.IsHttps ? "https" : "http",
+                Host = this.Request.Host.ToString(),
+                Path = $"login/confirm/{ Uri.EscapeDataString(token)}"
             };
 
-            var url = uriBuilder.ToString();
-            var mail = new EmailNotification(emailAddress.ToString(), "Account Confirmation", $"Click the link to confirm your account - {url}");
-
+            var mail = new EmailNotification(emailAddress.ToString(), "Account Confirmation", $"Click the link to confirm your account - {uriBuilder.ToString()}");
             this.notificationService.PushAsync(mail);
 
             return Ok();
@@ -168,6 +164,7 @@ namespace RESTAPI.Controllers
 
         [HttpPost]
         [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(500)]
         public ActionResult PostCreateUser([FromBody] User user)
         {
