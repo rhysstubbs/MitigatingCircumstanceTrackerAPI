@@ -10,6 +10,7 @@ using NotificationProvider;
 using NotificationProvider.Interfaces;
 using NotificationProvider.Services;
 using Swashbuckle.AspNetCore.Swagger;
+using System;
 using System.IO;
 
 namespace RESTAPI
@@ -25,6 +26,12 @@ namespace RESTAPI
 
         public void ConfigureServices(IServiceCollection services)
         {
+            var appUri = new UriBuilder()
+            {
+                Scheme = "https",
+                Host = Configuration["CORS:Origin"].ToString(),
+            };
+
             // CORS Policy Configuration
             services.AddCors(options =>
             {
@@ -32,13 +39,16 @@ namespace RESTAPI
                     builder => builder.AllowAnyOrigin()
                                         .AllowAnyHeader()
                                         .AllowAnyMethod()
-                                        .AllowCredentials());
+                                        .AllowCredentials()
+                                        .Build());
 
                 options.AddPolicy("ProductionPolicy",
-                    builder => builder.WithOrigins(Configuration["CORS:Origin"])
+                    builder => builder.SetIsOriginAllowedToAllowWildcardSubdomains()
+                                        .WithOrigins("https://*.rhysstubbs.services")
                                         .AllowAnyHeader()
-                                        .WithMethods("GET, POST, PATCH, DELETE")
-                                         .AllowCredentials());
+                                        .AllowAnyMethod()
+                                        .AllowCredentials()
+                                        .Build());
             });
 
             // Swagger Configuration
@@ -84,7 +94,7 @@ namespace RESTAPI
 
                 app.UseDatabaseErrorPage();
 
-                System.Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", Path.Combine(Directory.GetCurrentDirectory(), Configuration["GAE:Credentials"]));
+                Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", Path.Combine(Directory.GetCurrentDirectory(), Configuration["GAE:Credentials"]));
             }
             else
             {

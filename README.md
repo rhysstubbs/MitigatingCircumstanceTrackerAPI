@@ -21,13 +21,15 @@ Please refer to the [Nuget CLI docs](https://docs.microsoft.com/en-us/nuget/tool
 
 Code styling is managed with [CodeMaid](http://www.codemaid.net/) for Visul Studio.
 
-```
-Give an example
-```
-
 ## Deployment
 
 Deployment is managed with [Google Cloud Tools for Visul Studio](https://cloud.google.com/visual-studio/)
+
+To deploy indexes to the datastore, use:
+
+```
+gcloud datastore indexes create
+```
 
 ## Built With
 

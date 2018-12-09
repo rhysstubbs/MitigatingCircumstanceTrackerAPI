@@ -42,8 +42,6 @@ namespace RESTAPI.Models.JSON
         [JsonConverter(typeof(StringEnumConverter))]
         public RequestStatus Status { get; set; }
 
-        public List<string> Subjects { get; set; }
-
         public Entity ToEntity() => new Entity()
         {
             ["owner"] = new Key().WithElement(EntityKind.User.ToString(), this.Owner),

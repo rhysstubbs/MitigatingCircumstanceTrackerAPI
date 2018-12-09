@@ -7,7 +7,7 @@ namespace NotificationProvider.Models
     {
         public MailAddress To { get; set; }
 
-        public MailAddress From { get; set; } = new MailAddress("rhys_stubbs@yahoo.co.uk");
+        public MailAddress From { get; set; } = new MailAddress("admin@rhysstubbs.services");
 
         public string Subject { get; set; }
 

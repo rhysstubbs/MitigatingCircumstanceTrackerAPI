@@ -1,12 +1,12 @@
 ﻿using Google.Cloud.Datastore.V1;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using RESTAPI.Models.JSON;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace MCT.RESTAPI.Models
 {
-    public class User
+    internal class User
     {
         [Key]
         public Key Id { get; set; }
@@ -17,5 +17,6 @@ namespace MCT.RESTAPI.Models
         [JsonProperty]
         public bool IsAdmin { get; set; }
 
+        public List<Request> Requests { get; set; }
     }
 }

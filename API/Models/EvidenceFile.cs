@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 namespace MCT.RESTAPI.Models
 {
     [JsonObject(MemberSerialization.OptIn)]
-    public class EvidenceFile
+    internal class EvidenceFile
     {
         [Key]
         [JsonRequired]

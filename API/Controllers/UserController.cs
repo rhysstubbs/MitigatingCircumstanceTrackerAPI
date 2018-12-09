@@ -42,27 +42,42 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public IActionResult GetUser(string username)
+        public IActionResult GetUser(string username, [FromQuery] bool withRequests = false)
         {
-            Query query = new Query(EntityKind.User.ToString())
-            {
-                Filter = Filter.Equal("username", username),
-            };
+            Key userKey = new Key().WithElement(EntityKind.User.ToString(), username);
+            Entity result = this.datastore.Lookup(userKey);
 
-            DatastoreQueryResults result = this.datastore.RunQuery(query);
-
-            if (!result.Entities.Any())
+            if (result == null)
             {
                 return NotFound(username);
             }
 
-            var props = result.Entities.First().Properties;
+            var props = result.Properties;
             var user = new User()
             {
-                Id = result.Entities.First().Key,
+                Id = userKey,
                 Username = props["username"].StringValue,
                 IsAdmin = props["isAdmin"].BooleanValue
             };
+
+            if (withRequests)
+            {
+                Query requestQuery = new Query(EntityKind.Request.ToString())
+                {
+                    Filter = Filter.Equal("owner", userKey),
+                    Order = { { "dateSubmitted", PropertyOrder.Types.Direction.Descending } },
+                };
+
+                DatastoreQueryResults requests = this.datastore.RunQuery(requestQuery);
+                if (requests.Entities.Any())
+                {
+                    foreach (var request in requests.Entities)
+                    {
+                        request.Properties["owner"] = null;
+                        user.Requests.Add(request.ToRequest());
+                    }
+                }
+            }
 
             return Ok(user);
         }
@@ -73,20 +88,14 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(404)]
         public IActionResult GetUserExists(string username)
         {
-            Query query = new Query(EntityKind.User.ToString())
-            {
-                Filter = Filter.Equal("username", username),
-                Projection = { "__key__" }
-            };
+            Entity result = this.datastore.Lookup(new Key().WithElement(EntityKind.User.ToString(), username));
 
-            DatastoreQueryResults result = this.datastore.RunQuery(query);
-
-            if (!result.Entities.Any())
+            if (result == null)
             {
                 return NotFound(username);
             }
 
-            return Ok(result.Entities.First());
+            return Ok();
         }
 
         [HttpGet("confirm")]
@@ -119,22 +128,21 @@ namespace RESTAPI.Controllers
 
             var keyFactory = this.datastore.CreateKeyFactory(EntityKind.User.ToString());
 
-            var username = confEntity["user"].StringValue;
+            var username = confEntity.Properties["user"].KeyValue.Path.First().Name;
             var isAdmin = username.ToCharArray().First() != 'i';
 
-            // Create the user account
             Entity newUser = new Entity()
             {
-                Key = keyFactory.CreateIncompleteKey(),
-                ["username"] = username,
-                ["isAdmin"] = isAdmin
+                Key = keyFactory.CreateKey(username),
+                ["isAdmin"] = isAdmin,
+                ["createdAt"] = DateTime.Now.ToString()
             };
 
             CommitResponse response;
             using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
             {
                 transaction.Insert(newUser);
-                transaction.Delete(confEntity);
+                transaction.Delete(confEntity.Key);
 
                 response = transaction.Commit();
             }
@@ -162,26 +170,32 @@ namespace RESTAPI.Controllers
                 Key = kf.CreateIncompleteKey(),
                 ["token"] = token,
                 ["created_at"] = DateTime.Now.ToString("yyyyMMddHHmmssfff"),
-                ["user"] = username
+                ["user"] = new Key().WithElement(EntityKind.User.ToString(), username)
             };
+
+            Query existingConfirmationsQuery = new Query(EntityKind.Confirmation.ToString())
+            {
+                Filter = Filter.Equal("user", new Key().WithElement(EntityKind.User.ToString(), username))
+            };
+
+            var existingConfirmations = this.datastore.RunQuery(existingConfirmationsQuery);
 
             CommitResponse commitResponse;
             using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
             {
-                try
+                if (existingConfirmations.Entities.Any())
                 {
-                    transaction.Insert(confirmationEntity);
-                    commitResponse = transaction.Commit();
+                    transaction.Delete(existingConfirmations.Entities);
                 }
-                catch (Exception exception)
-                {
-                    return StatusCode(500, exception);
-                }
+
+                transaction.Insert(confirmationEntity);
+                commitResponse = transaction.Commit();
             }
 
             var uriBuilder = new UriBuilder()
             {
-                Host = configuration["CORS:Origin"],
+                Scheme = "https",
+                Host = configuration["CORS:Origin"].ToString(),
                 Path = $"login/confirm/{ Uri.EscapeDataString(token)}"
             };
 

@@ -1,0 +1,12 @@
+indexes:
+
+- kind: Request
+  properties:
+  - name: owner
+  - name: dateSubmitted
+    direction: desc
+
+- kind: Confirmation
+  properties:
+  - name: user
+  - name: token

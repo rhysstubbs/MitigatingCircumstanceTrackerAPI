@@ -11,23 +11,35 @@ namespace RESTAPI.Models.JSON
     public class Request
     {
         [Key]
-        [JsonRequired]
-        [JsonProperty]
         public long Id { get; set; }
 
-        [JsonProperty]
         [JsonRequired]
         public Key Owner { get; set; }
 
-        [JsonProperty]
+        public bool Extension { get; set; }
+
+        [JsonRequired]
+        [DataType(DataType.MultilineText)]
         public string Description { get; set; }
 
-        [JsonProperty]
-        public DateTime? DateSubmitted { get; set; }
+        [DataType(DataType.MultilineText)]
+        public string Reason { get; set; }
 
-        [JsonProperty]
+        [JsonRequired]
+        public bool AgreementSigned { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime DateSubmitted { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime DateStarted { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime DateEnded { get; set; }
+
+        public bool OnGoing { get; set; }
+
         [JsonConverter(typeof(StringEnumConverter))]
-        public RequestStatus? Status { get; set; }
-
+        public RequestStatus Status { get; set; }
     }
 }
