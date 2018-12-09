@@ -6,11 +6,11 @@ namespace RESTAPI.Controllers
     [Route("/")]
     public class BaseController : ControllerBase
     {
-        [HttpGet("isLive")]
+        [HttpGet("health")]
         [ProducesResponseType(200)]
         public IActionResult Index()
         {
-            return Ok();
+            return Ok("healthy");
         }
     }
 }

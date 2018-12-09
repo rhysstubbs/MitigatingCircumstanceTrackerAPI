@@ -25,14 +25,20 @@ namespace RESTAPI.Controllers
     [Produces("application/json")]
     public class RequestController : BaseController
     {
+        #region Properties
+
         private readonly DatastoreDb datastore;
         private readonly CloudStorageOptions storageOptions;
         private readonly StorageClient storage;
         private readonly INotificationService notificationService;
         private readonly Slack slackClient;
 
+        #endregion Properties
+
+        #region Constructor
+
         public RequestController(
-            IConfiguration configuration, 
+            IConfiguration configuration,
             IOptions<CloudStorageOptions> options,
             INotificationService notificationService,
             Slack slackClient)
@@ -44,9 +50,14 @@ namespace RESTAPI.Controllers
             this.slackClient = slackClient;
         }
 
+        #endregion Constructor
+
+        #region Methods
+
         [HttpGet]
         [ProducesResponseType(200)]
         [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
         public IActionResult Get()
         {
             Query query = new Query(EntityKind.Request.ToString());
@@ -62,6 +73,7 @@ namespace RESTAPI.Controllers
 
         [HttpGet("{id}")]
         [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         public IActionResult Get(long id)
         {
@@ -79,6 +91,7 @@ namespace RESTAPI.Controllers
         [HttpGet("ForUser/{username}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
         public IActionResult GetRequestsForUser(string username)
         {
             Query query = new Query(EntityKind.Request.ToString());
@@ -236,12 +249,11 @@ namespace RESTAPI.Controllers
             try
             {
                 this.slackClient.PostToChannel("advanced-development", $"A new request has been submited by {request.Owner}.");
-                //this.slackClient.PostToUser("i7433085@bournemouth.ac.uk", $"Your submission has been successful and is currently : {request.Status.ToString()}");
-                this.notificationService.PushAsync(new EmailNotification("i7433085@bournemouth.ac.uk", "this is a test"));
+                this.notificationService.PushAsync(new EmailNotification($"{request.Owner}@bournemouth.ac.uk", "We have your submission", "Thank you for your submision, you will recieve an update within 3-5 working days."));
             }
-            catch(Exception e)
+            catch (Exception exception)
             {
-
+                return StatusCode(500, exception);
             }
 
             return Ok(requestEntity.ToRequest());
@@ -249,6 +261,7 @@ namespace RESTAPI.Controllers
 
         [HttpPatch("{id}")]
         [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(500)]
         public IActionResult Patch(long id, [FromBody] Request request)
         {
@@ -288,6 +301,7 @@ namespace RESTAPI.Controllers
 
         [HttpPatch("{id}/markAs/{status}")]
         [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         [ProducesResponseType(500)]
         public IActionResult PatchSetStatus(long id, RequestStatus status)
@@ -328,6 +342,7 @@ namespace RESTAPI.Controllers
 
         [HttpDelete("{id}")]
         [ProducesResponseType(202)]
+        [ProducesResponseType(400)]
         [ProducesResponseType(500)]
         public IActionResult Delete(long id)
         {
@@ -347,5 +362,7 @@ namespace RESTAPI.Controllers
 
             return Accepted();
         }
+
+        #endregion Methods
     }
 }

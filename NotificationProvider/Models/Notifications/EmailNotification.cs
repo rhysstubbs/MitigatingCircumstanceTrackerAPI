@@ -2,7 +2,7 @@
 {
     public class EmailNotification : Notification
     {
-        public EmailNotification(string recipient, string message) : base(recipient, message)
+        public EmailNotification(string recipient, string subject, string message) : base(recipient, subject, message)
         {
         }
     }

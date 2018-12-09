@@ -23,32 +23,30 @@ namespace RESTAPI
             Configuration = configuration;
         }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // CORS Policy Configuration
             services.AddCors(options =>
-            options.AddPolicy("MyPolicy",
-            builder =>
             {
-                builder.AllowAnyOrigin()
-                       .AllowAnyMethod()
-                       .AllowAnyHeader()
-                       .AllowCredentials();
-            }));
+                options.AddPolicy("DevelopmentPolicy",
+                    builder => builder.AllowAnyOrigin()
+                                        .AllowAnyHeader()
+                                        .AllowAnyMethod()
+                                        .AllowCredentials());
 
+                options.AddPolicy("ProductionPolicy",
+                    builder => builder.WithOrigins(Configuration["CORS:Origin"])
+                                        .AllowAnyHeader()
+                                        .WithMethods("GET, POST, PATCH, DELETE")
+                                         .AllowCredentials());
+            });
+
+            // Swagger Configuration
             services.AddSwaggerGen(c =>
             {
                 c.DescribeAllEnumsAsStrings();
                 c.DescribeAllParametersInCamelCase();
                 c.DescribeStringEnumsInCamelCase();
-
-                c.AddSecurityDefinition("Bearer", new ApiKeyScheme
-                {
-                    Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
-                    Name = "Authorization",
-                    In = "header",
-                    Type = "apiKey"
-                });
 
                 c.SwaggerDoc("v1", new Info
                 {
@@ -58,13 +56,14 @@ namespace RESTAPI
                 });
             });
 
+            // Services Registration for DI
             services.AddOptions();
-
             services.AddSingleton<IConfiguration>(Configuration);
             services.AddScoped<INotificationService, NotificationService>();
             services.Configure<CloudStorageOptions>(Configuration.GetSection("GoogleCloudStorage"));
             services.AddScoped<Slack>();
 
+            // Finally, Add and Configure the MVC Framework
             services.AddMvc()
             .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
             .AddJsonOptions(options =>
@@ -75,16 +74,24 @@ namespace RESTAPI
             });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             if (env.IsDevelopment())
             {
+                app.UseCors("DevelopmentPolicy");
+
                 app.UseDeveloperExceptionPage();
+
+                app.UseDatabaseErrorPage();
+
                 System.Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", Path.Combine(Directory.GetCurrentDirectory(), Configuration["GAE:Credentials"]));
             }
             else
             {
+                app.UseExceptionHandler("/Error");
+
+                app.UseCors("ProductionPolicy");
+
                 app.UseHsts();
             }
 
@@ -97,8 +104,8 @@ namespace RESTAPI
                 c.DefaultModelsExpandDepth(-1);
             });
 
-            app.UseCors("MyPolicy");
             app.UseHttpsRedirection();
+
             app.UseMvc();
         }
     }

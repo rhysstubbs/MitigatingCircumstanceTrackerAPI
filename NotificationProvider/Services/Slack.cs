@@ -13,7 +13,7 @@ namespace NotificationProvider.Services
 
         private readonly SlackClient cClient;
 
-        #endregion
+        #endregion Properties
 
         #region Constructor
 
@@ -32,22 +32,22 @@ namespace NotificationProvider.Services
             }
         }
 
-        #endregion
+        #endregion Constructor
 
         #region Public Methods
 
         public void PostToUser(string username, string message)
         {
-          ////var test = FetchUsers();
+            ////var test = FetchUsers();
 
-          //  this.client.GetUserListAsync();
+            //  this.client.GetUserListAsync();
 
-          //  var user = client.Users.Find(x => x.name.Equals("slackbot")); // you can replace slackbot with everyone else here
+            //  var user = client.Users.Find(x => x.name.Equals("slackbot")); // you can replace slackbot with everyone else here
 
-          // // var user = GetUser(username);
-          //  var dmchannel = GetDMForUser(user);
+            // // var user = GetUser(username);
+            //  var dmchannel = GetDMForUser(user);
 
-          //  client.PostMessageAsync(dmchannel.id, message);
+            //  client.PostMessageAsync(dmchannel.id, message);
 
             cClient.GetUserList((ulr) => { Console.WriteLine("got users"); });
             var user = client.Users.Find(x => x.name.Equals("slackbot")); // you can replace slackbot with everyone else here
@@ -65,7 +65,7 @@ namespace NotificationProvider.Services
             client.GetChannelListAsync(ExcludeArchived: true);
         }
 
-        #endregion
+        #endregion Public Methods
 
         #region Private Helper Methods
 
@@ -84,6 +84,6 @@ namespace NotificationProvider.Services
             return await this.client.GetUserListAsync();
         }
 
-        #endregion
+        #endregion Private Helper Methods
     }
 }

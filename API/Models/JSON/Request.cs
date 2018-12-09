@@ -1,12 +1,10 @@
 ﻿using Google.Cloud.Datastore.V1;
 using MCT.RESTAPI.Enums;
-using MCT.RESTAPI.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 
 namespace RESTAPI.Models.JSON
 {

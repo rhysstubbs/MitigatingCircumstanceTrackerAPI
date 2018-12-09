@@ -22,7 +22,7 @@ namespace NotificationProvider
             SendGridMail mail = new SendGridMail()
             {
                 To = new MailAddress(notification.Recipient),
-                Subject = "Test",
+                Subject = notification.Subject,
                 Content = notification.Message
             };
 

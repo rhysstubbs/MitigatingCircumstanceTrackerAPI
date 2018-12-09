@@ -1,6 +1,5 @@
 ﻿using Google.Cloud.Datastore.V1;
 using MCT.RESTAPI.Enums;
-using MCT.RESTAPI.Extensions;
 using MCT.RESTAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -16,9 +15,15 @@ namespace RESTAPI.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
+        #region Properties
+
         private readonly DatastoreDb datastore;
         private readonly IConfiguration configuration;
         private readonly INotificationService notificationService;
+
+        #endregion Properties
+
+        #region Constructor
 
         public UserController(IConfiguration configuration, INotificationService notificationService)
         {
@@ -26,6 +31,10 @@ namespace RESTAPI.Controllers
             this.datastore = DatastoreDb.Create(configuration["GAE:projectId"]);
             this.notificationService = notificationService;
         }
+
+        #endregion Constructor
+
+        #region Methods
 
         [HttpGet("{username}/exists")]
         [ProducesResponseType(200)]
@@ -53,7 +62,7 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public IActionResult ValidateConfirmedUser([FromQuery] string token)
+        public IActionResult GetValidateConfirmedUser([FromQuery] string token)
         {
             var decodedToken = Uri.UnescapeDataString(token);
 
@@ -63,7 +72,6 @@ namespace RESTAPI.Controllers
             };
 
             DatastoreQueryResults result = this.datastore.RunQuery(query);
-            
 
             if (!result.Entities.Any())
             {
@@ -111,7 +119,7 @@ namespace RESTAPI.Controllers
         [HttpPost("{username}/confirm")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public IActionResult ConfirmUser(string username)
+        public IActionResult PostConfirmUser(string username)
         {
             var emailAddress = new MailAddress($"{username}@bournemouth.ac.uk");
 
@@ -151,7 +159,7 @@ namespace RESTAPI.Controllers
             };
 
             var url = uriBuilder.ToString();
-            var mail = new EmailNotification(emailAddress.ToString(), $"Click the link to confirm your account - {url}");
+            var mail = new EmailNotification(emailAddress.ToString(), "Account Confirmation", $"Click the link to confirm your account - {url}");
 
             this.notificationService.PushAsync(mail);
 
@@ -193,5 +201,6 @@ namespace RESTAPI.Controllers
             return Ok();
         }
 
+        #endregion Methods
     }
 }

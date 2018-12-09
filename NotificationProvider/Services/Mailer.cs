@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using NotificationProvider.Models;
+﻿using NotificationProvider.Models;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
