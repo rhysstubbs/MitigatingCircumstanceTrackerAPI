@@ -21,5 +21,11 @@ namespace MCT.RESTAPI.Enums
 
         [Description("Archived")]
         Archived,
+
+        [Description("MoreInfoRequired")]
+        MoreInfoRequired,
+
+        [Description("Updated")]
+        Updated
     }
 }

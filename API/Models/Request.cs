@@ -5,9 +5,8 @@ using Newtonsoft.Json.Converters;
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace RESTAPI.Models.JSON
+namespace RESTAPI.Models
 {
-    [JsonObject(MemberSerialization.OptIn)]
     public class Request
     {
         [Key]
@@ -35,7 +34,7 @@ namespace RESTAPI.Models.JSON
         public DateTime DateStarted { get; set; }
 
         [DataType(DataType.Date)]
-        public DateTime DateEnded { get; set; }
+        public DateTime? DateEnded { get; set; }
 
         public bool OnGoing { get; set; }
 

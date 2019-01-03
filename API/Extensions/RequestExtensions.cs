@@ -1,6 +1,7 @@
 ﻿using Google.Cloud.Datastore.V1;
 using MCT.RESTAPI.Enums;
-using RESTAPI.Models.JSON;
+using MCT.RESTAPI.Models;
+using RESTAPI.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -8,13 +9,10 @@ using System.Linq;
 
 namespace MCT.RESTAPI.Extensions
 {
-    internal static class RequestExtensionMethods
+    internal static class EntityExtensionMethods
     {
         public static Key ToKey(this long id) =>
             new Key().WithElement(EntityKind.Request.ToString(), id);
-
-        public static ArrayValue ToKeys(this HashSet<string> subjects) =>
-            subjects.Select(k => new Key().WithElement(EntityKind.Subject.ToString(), k.ToLower())).ToArray();
 
         public static long ToId(this Key key) => key.Path.First().Id;
 
@@ -27,16 +25,28 @@ namespace MCT.RESTAPI.Extensions
             ["dateSubmitted"] = request.DateSubmitted
         };
 
-        public static Request ToRequest(this Entity entity)
+        public static Notification ToNotification(this Entity entity) => new Notification()
         {
-            return new Request
-            {
+            Id = entity.Key.ToId() != 0 ? entity.Key.ToId() : 0,
+            Description = entity["description"].StringValue,
+            Read = entity["read"].BooleanValue,
+            Created = DateTime.ParseExact(entity["createdAt"]?.StringValue ?? DateTime.Now.ToString("yyyyMMddHHmmssfff"), "yyyyMMddHHmmssfff", CultureInfo.InvariantCulture),
+        };
+
+        public static Request ToRequest(this Entity entity) => new Request()
+        {
                 Id = entity.Key.ToId() != 0 ? entity.Key.ToId() : 0,
                 Owner = entity["owner"].KeyValue ?? null,
+                Extension = entity["extension"].BooleanValue,
                 Description = (string)entity?["description"] ?? null,
+                Reason = entity["reason"].StringValue ?? null,
+                AgreementSigned = entity["agreementSigned"].BooleanValue,
                 DateSubmitted = DateTime.ParseExact(entity["dateSubmitted"]?.StringValue ?? DateTime.Now.ToString("yyyyMMddHHmmssfff"), "yyyyMMddHHmmssfff", CultureInfo.InvariantCulture),
+                DateStarted = DateTime.ParseExact(entity["dateStarted"].StringValue, "yyyyMMddHHmmssfff", CultureInfo.InvariantCulture),
+                DateEnded = entity["dateEnded"]?.StringValue != null ? DateTime.ParseExact(entity["dateEnded"].StringValue, "yyyyMMddHHmmssfff", CultureInfo.InvariantCulture) : (DateTime?) null,
+                OnGoing = entity["onGoing"].BooleanValue,
                 Status = (RequestStatus)Enum.Parse(typeof(RequestStatus), entity["status"]?.StringValue, true)
-            };
-        }
+        };
+
     }
 }

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using NotificationProvider.Interfaces;
 using NotificationProvider.Models.Notifications;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
 
@@ -42,7 +43,7 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public IActionResult GetUser(string username, [FromQuery] bool withRequests = false)
+        public IActionResult GetUser(string username, [FromQuery] bool withRequests = false, [FromQuery] bool withNotifications = false)
         {
             Key userKey = new Key().WithElement(EntityKind.User.ToString(), username);
             Entity result = this.datastore.Lookup(userKey);
@@ -56,7 +57,7 @@ namespace RESTAPI.Controllers
             var user = new User()
             {
                 Id = userKey,
-                Username = props["username"].StringValue,
+                Username = result.Key.Path.First().Name,
                 IsAdmin = props["isAdmin"].BooleanValue
             };
 
@@ -71,11 +72,21 @@ namespace RESTAPI.Controllers
                 DatastoreQueryResults requests = this.datastore.RunQuery(requestQuery);
                 if (requests.Entities.Any())
                 {
-                    foreach (var request in requests.Entities)
-                    {
-                        request.Properties["owner"] = null;
-                        user.Requests.Add(request.ToRequest());
-                    }
+                    user.Requests = requests.Entities.Select(x => x.ToRequest()).ToList();
+                }
+            }
+
+            if (withNotifications)
+            {
+                Query query = new Query(EntityKind.Notification.ToString())
+                {
+                    Filter = Filter.And(Filter.Equal("user", userKey), Filter.Equal("read", false))
+                };
+
+                DatastoreQueryResults results = this.datastore.RunQuery(query);
+                if (results.Entities.Any())
+                {
+                    user.Notifications = results.Entities.Select(x => x.ToNotification()).ToList();
                 }
             }
 
@@ -85,14 +96,32 @@ namespace RESTAPI.Controllers
         [HttpGet("{username}/exists")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(403)]
         [ProducesResponseType(404)]
-        public IActionResult GetUserExists(string username)
+        public IActionResult GetUserExists(string username, [FromQuery] string email)
         {
-            Entity result = this.datastore.Lookup(new Key().WithElement(EntityKind.User.ToString(), username));
+            if (email == null)
+            {
+                return BadRequest("A requester email must be provided for authorisaton");
+            }
 
-            if (result == null)
+            var userKey = new Key().WithElement(EntityKind.User.ToString(), username);
+            Query userQuery = new Query(EntityKind.User.ToString())
+            {
+                Filter = Filter.Equal("__key__", userKey)
+            };
+
+            DatastoreQueryResults result = this.datastore.RunQuery(userQuery);
+
+            List<string> emails = result.Entities.First().Properties["authorisedEmails"]?.ArrayValue.Values.Select(x => x.StringValue).ToList();
+
+            if (result == null || result.Entities.Count == 0)
             {
                 return NotFound(username);
+            }
+            else if (emails.Count == 0 || emails.Any(authorisedEmail => authorisedEmail != email))
+            {
+                return StatusCode(403);
             }
 
             return Ok();
@@ -131,11 +160,17 @@ namespace RESTAPI.Controllers
             var username = confEntity.Properties["user"].KeyValue.Path.First().Name;
             var isAdmin = username.ToCharArray().First() != 'i';
 
+            List<string> authorisedEmails = new List<string>()
+            {
+                confEntity["origin"].StringValue
+            };
+
             Entity newUser = new Entity()
             {
                 Key = keyFactory.CreateKey(username),
                 ["isAdmin"] = isAdmin,
-                ["createdAt"] = DateTime.Now.ToString()
+                ["createdAt"] = DateTime.Now.ToString(),
+                ["authorisedEmails"] = authorisedEmails.ToArray()
             };
 
             CommitResponse response;
@@ -158,7 +193,7 @@ namespace RESTAPI.Controllers
         [HttpPost("{username}/confirm")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public IActionResult PostConfirmUser(string username)
+        public IActionResult PostConfirmUser(string username, [FromQuery] string authEmail)
         {
             var emailAddress = new MailAddress($"{username}@bournemouth.ac.uk");
 
@@ -170,7 +205,8 @@ namespace RESTAPI.Controllers
                 Key = kf.CreateIncompleteKey(),
                 ["token"] = token,
                 ["created_at"] = DateTime.Now.ToString("yyyyMMddHHmmssfff"),
-                ["user"] = new Key().WithElement(EntityKind.User.ToString(), username)
+                ["user"] = new Key().WithElement(EntityKind.User.ToString(), username),
+                ["origin"] = authEmail
             };
 
             Query existingConfirmationsQuery = new Query(EntityKind.Confirmation.ToString())
@@ -227,6 +263,54 @@ namespace RESTAPI.Controllers
             }
 
             return Ok(results.Entities.Select(x => x.ToRequest()));
+        }
+
+        [HttpGet("{username}/notifications")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        public IActionResult GetNotificationsForUser(string username)
+        {
+            Query query = new Query(EntityKind.Notification.ToString());
+            Key userKey = new Key().WithElement(EntityKind.User.ToString(), username);
+
+            if (userKey != null)
+            {
+                query.Filter = Filter.And(Filter.Equal("user", userKey), Filter.Equal("read", false));
+            }
+
+            DatastoreQueryResults results = this.datastore.RunQuery(query);
+
+            if (!results.Entities.Any())
+            {
+                return NoContent();
+            }
+
+            return Ok(results.Entities.Select(x => x.ToNotification()));
+        }
+
+        [HttpDelete("{username}/notifications/{notificationId}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(500)]
+        public IActionResult DeleteNotificationForUser(string username, long notificationId)
+        {
+
+            Key notificationKey = new Key().WithElement(EntityKind.Notification.ToString(), notificationId);
+
+            CommitResponse commitResponse;
+            using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
+            {
+                transaction.Delete(notificationKey);
+                commitResponse = transaction.Commit();
+            }
+
+            if (commitResponse.MutationResults.Count != 1)
+            {
+                return StatusCode(500, "Failed to remove notification");
+            }
+
+            return Ok();
         }
 
         #endregion Methods

@@ -7,9 +7,6 @@ namespace MCT.RESTAPI.Enums
         [Description("Request")]
         Request,
 
-        [Description("Submitted")]
-        Subject,
-
         [Description("User")]
         User,
 
@@ -17,6 +14,9 @@ namespace MCT.RESTAPI.Enums
         File,
 
         [Description("Confirmation")]
-        Confirmation
+        Confirmation,
+
+        [Description("Notification")]
+        Notification
     }
 }

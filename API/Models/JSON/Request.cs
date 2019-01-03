@@ -35,7 +35,7 @@ namespace RESTAPI.Models.JSON
         public DateTime DateStarted { get; set; }
 
         [DataType(DataType.Date)]
-        public DateTime DateEnded { get; set; }
+        public DateTime? DateEnded { get; set; }
 
         public bool OnGoing { get; set; }
 
@@ -44,14 +44,15 @@ namespace RESTAPI.Models.JSON
 
         public Entity ToEntity() => new Entity()
         {
-            ["owner"] = new Key().WithElement(EntityKind.User.ToString(), this.Owner),
+            Key = new Key().WithElement(EntityKind.Request.ToString(), Id),
+            ["owner"] = new Key().WithElement(EntityKind.User.ToString(), Owner),
             ["extension"] = this.Extension,
             ["description"] = this.Description,
             ["reason"] = this.Reason,
             ["agreementSigned"] = this.AgreementSigned,
             ["dateSubmitted"] = this.DateSubmitted.ToString("yyyyMMddHHmmssfff"),
             ["dateStarted"] = this.DateStarted.ToString("yyyyMMddHHmmssfff"),
-            ["dateEnded"] = this.DateEnded.ToString("yyyyMMddHHmmssfff"),
+            ["dateEnded"] = this.DateEnded?.ToString("yyyyMMddHHmmssfff"),
             ["onGoing"] = this.OnGoing,
             ["status"] = this.Status.ToString()
         };

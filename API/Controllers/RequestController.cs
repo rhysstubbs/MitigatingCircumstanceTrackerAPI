@@ -3,6 +3,7 @@ using Google.Cloud.Storage.V1;
 using MCT.RESTAPI.Enums;
 using MCT.RESTAPI.Extensions;
 using MCT.RESTAPI.Models.GoogleCloud;
+using MCT.RESTAPI.Models.JSON;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -10,12 +11,12 @@ using Microsoft.Extensions.Options;
 using NotificationProvider.Interfaces;
 using NotificationProvider.Models.Notifications;
 using NotificationProvider.Services;
+using RESTAPI.Models;
 using RESTAPI.Models.JSON;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace RESTAPI.Controllers
@@ -108,23 +109,17 @@ namespace RESTAPI.Controllers
                     }
                     else
                     {
-                        byte[] fBytes = new byte[f.Length];
+                        Google.Apis.Storage.v1.Data.Object uploadObject;
+                        int timestamp = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
                         using (var ms = new MemoryStream())
                         {
                             f.CopyTo(ms);
-                            fBytes = ms.ToArray();
+                            uploadObject = await this.storage.UploadObjectAsync(storageOptions.BucketName, $"{f.FileName}-{timestamp}", f.ContentType, ms);
                         }
-
-                        var rawFile = Encoding.UTF8.GetString(fBytes).ToCharArray();
-                        int timestamp = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
                         try
                         {
-                            var uploadObject = await this.storage.UploadObjectAsync(
-                                            storageOptions.BucketName, f.FileName, f.ContentType,
-                                            new MemoryStream(Encoding.UTF8.GetBytes(rawFile)));
-
                             if (uploadObject.Id.Length > 0)
                             {
                                 var keyFactory = this.datastore.CreateKeyFactory(EntityKind.File.ToString());
@@ -183,9 +178,10 @@ namespace RESTAPI.Controllers
 
         [HttpPost]
         [ProducesResponseType(201)]
+        [ProducesResponseType(400)]
         public IActionResult Post([FromBody] JSONRequest request)
         {
-            var keyFactory = this.datastore.CreateKeyFactory(EntityKind.Request.ToString());
+            KeyFactory keyFactory = datastore.CreateKeyFactory(EntityKind.Request.ToString());
 
             if (request == null)
             {
@@ -203,7 +199,7 @@ namespace RESTAPI.Controllers
             requestEntity.Key = keyFactory.CreateIncompleteKey();
             CommitResponse commitResponse;
 
-            using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
+            using (DatastoreTransaction transaction = datastore.BeginTransaction())
             {
                 try
                 {
@@ -224,8 +220,8 @@ namespace RESTAPI.Controllers
 
             try
             {
-                this.slackClient.PostToChannel("advanced-development", $"A new request has been submited by {request.Owner}.");
-                this.notificationService.PushAsync(new EmailNotification($"{request.Owner}@bournemouth.ac.uk", "We have your submission", "Thank you for your submision, you will recieve an update within 3-5 working days."));
+                slackClient.PostToChannel("advanced-development", $"A new request has been submited by {request.Owner}.");
+                notificationService.PushAsync(new EmailNotification($"{request.Owner}@bournemouth.ac.uk", "We have your submission", "Thank you for your submision, you will recieve an update within 3-5 working days."));
             }
             catch (Exception exception)
             {
@@ -239,7 +235,7 @@ namespace RESTAPI.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(500)]
-        public IActionResult Patch(long id, [FromBody] Request request)
+        public IActionResult Patch(long id, [FromBody] JSONRequest request)
         {
             if (request == null)
             {
@@ -251,15 +247,12 @@ namespace RESTAPI.Controllers
                 request.Id = id;
             }
 
-            Entity requestEntity = new Entity()
-            {
-                Key = new Key().WithElement(EntityKind.Request.ToString(), request.Id),
-                ["description"] = request.Description ?? null,
-                ["status"] = request.Status.ToString() ?? null
-            };
+            request.Status = RequestStatus.Updated;
 
+            Entity requestEntity = request.ToEntity();
             CommitResponse commitResponse;
-            using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
+
+            using (DatastoreTransaction transaction = datastore.BeginTransaction())
             {
                 try
                 {
@@ -270,6 +263,16 @@ namespace RESTAPI.Controllers
                 {
                     return StatusCode(500, exception);
                 }
+            }
+
+            try
+            {
+                slackClient.PostToChannel("advanced-development", $"Request {request.Id} has been updated by {request.Owner}.");
+                notificationService.PushAsync(new EmailNotification($"{request.Owner}@bournemouth.ac.uk", "Submission Updated", "Thank you for your updating your submission, you will recieve an update within 3-5 working days."));
+            }
+            catch (Exception exception)
+            {
+                return StatusCode(500, exception);
             }
 
             return Ok(requestEntity.ToRequest());
@@ -314,6 +317,56 @@ namespace RESTAPI.Controllers
             }
 
             return Ok();
+        }
+
+        [HttpPost("{id}/moreInfo")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        [ProducesResponseType(500)]
+        public IActionResult PostRequestMoreInfo(long id, [FromBody] MoreInfoRequest moreInfo)
+        {
+            Key key = new Key().WithElement(EntityKind.Request.ToString(), id);
+            Entity request = this.datastore.Lookup(key);
+
+            if (request == null)
+            {
+                return NotFound(key.ToString());
+            }
+            else
+            {
+                request["status"] = RequestStatus.MoreInfoRequired.ToString();
+            }
+
+            var keyFactory = this.datastore.CreateKeyFactory(EntityKind.Notification.ToString());
+
+            Entity notification = new Entity()
+            {
+                Key = keyFactory.CreateIncompleteKey(),
+                ["description"] = moreInfo.description,
+                ["request"] = key,
+                ["user"] = request["owner"].KeyValue,
+                ["createAt"] = DateTime.Now.ToString(),
+                ["read"] = false
+            };
+
+            CommitResponse commitResponse;
+            using (DatastoreTransaction transaction = this.datastore.BeginTransaction())
+            {
+                try
+                {
+                    transaction.Insert(notification);
+                    transaction.Update(request);
+
+                    commitResponse = transaction.Commit();
+                }
+                catch (Exception exception)
+                {
+                    return StatusCode(500, exception);
+                }
+            }
+
+            return Ok(request.ToRequest());
         }
 
         [HttpDelete("{id}")]

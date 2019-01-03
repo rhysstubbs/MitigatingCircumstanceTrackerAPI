@@ -89,9 +89,7 @@ namespace RESTAPI
             if (env.IsDevelopment())
             {
                 app.UseCors("DevelopmentPolicy");
-
                 app.UseDeveloperExceptionPage();
-
                 app.UseDatabaseErrorPage();
 
                 Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", Path.Combine(Directory.GetCurrentDirectory(), Configuration["GAE:Credentials"]));
@@ -99,9 +97,7 @@ namespace RESTAPI
             else
             {
                 app.UseExceptionHandler("/Error");
-
                 app.UseCors("ProductionPolicy");
-
                 app.UseHsts();
             }
 
